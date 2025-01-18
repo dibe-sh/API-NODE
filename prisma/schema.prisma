@@ -12,3 +12,138 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
+enum EntityType {
+  persons
+  organizations
+  locations
+}
+
+model Thread {
+  id                  String   @id @default(cuid())
+  uuid                String   @unique
+  url                 String
+  site_full           String
+  site                String
+  site_section        String
+  section_title       String
+  title               String
+  title_full          String
+  published           DateTime
+  replies_count       Int
+  participants_count  Int
+  site_type           String
+  main_image          String
+  country             String
+  site_categories     String[]
+  performance_score   Int
+  domain_rank         Int
+  domain_rank_updated DateTime
+  social              Social?
+  posts               Post[]
+
+  @@map("threads")
+}
+
+model Social {
+  id        String           @id @default(cuid())
+  facebook  FacebookMetrics? @relation(name: "FacebookMetricsToSocial")
+  vk_shares Int
+
+  threadId String @unique
+  thread   Thread @relation(fields: [threadId], references: [id])
+
+  @@map("social")
+}
+
+model FacebookMetrics {
+  id       String @id @default(cuid())
+  likes    Int
+  comments Int
+  shares   Int
+
+  socialId String  @unique
+  social   Social? @relation(name: "FacebookMetricsToSocial", fields: [socialId], references: [id])
+
+  @@map("facebook_metrics")
+}
+
+model Post {
+  id               String          @id @default(cuid())
+  uuid             String          @unique
+  url              String
+  ord_in_thread    Int
+  parent_url       String?
+  author           String?
+  published        DateTime
+  title            String
+  text             String
+  language         String
+  highlight_text   String?
+  highlight_title  String?
+  highlight_thread String?
+  sentiment        String
+  categories       String[]
+  topics           String[]
+  ai_allow         Boolean
+  has_canonical    Boolean
+  webz_reporter    Boolean
+  crawled          DateTime
+  updated          DateTime
+  rating           Float?
+  entities         Entity[]
+  external_links   ExternalLink[]
+  external_images  ExternalImage[]
+  syndication      Syndication?
+
+  threadId String
+  thread   Thread @relation(fields: [threadId], references: [id])
+
+  @@map("posts")
+}
+
+model Entity {
+  id        String     @id @default(cuid())
+  name      String
+  type      EntityType
+  sentiment String
+
+  postId String
+  post   Post   @relation(fields: [postId], references: [id])
+
+  @@map("entities")
+}
+
+model ExternalLink {
+  id  String @id @default(cuid())
+  url String
+
+  postId String
+  post   Post   @relation(fields: [postId], references: [id])
+
+  @@map("external_links")
+}
+
+model ExternalImage {
+  id        String   @id @default(cuid())
+  url       String
+  meta_info String?
+  uuid      String
+  labels    String[]
+
+  postId String
+  post   Post   @relation(fields: [postId], references: [id])
+
+  @@map("external_images")
+}
+
+model Syndication {
+  id           String  @id @default(cuid())
+  syndicated   Boolean
+  syndicate_id String?
+
+  postId String @unique
+  post   Post   @relation(fields: [postId], references: [id])
+
+  @@map("syndications")
+}
