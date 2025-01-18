@@ -1,0 +1,45 @@
+services:
+  # Node Server Setup
+  app:
+    build:
+      context: .
+      dockerfile: ./dockerfile
+    env_file:
+      - .env
+    ports:
+      - '${PORT}:${PORT}'
+    environment:
+      - NODE_ENV=${NODE_ENV}
+      - PORT=${PORT}
+    depends_on:
+      - postgres
+    command: yarn dev
+    volumes:
+      - .:/app
+      - ./yarn.lock:/app/yarn.lock
+      - /app/node_modules
+    develop:
+      watch:
+        - action: sync
+          path: ./
+          target: /src
+          ignore:
+            - node_modules/
+        - action: rebuild
+          path: package.json
+
+  # Postgres server setup
+  postgres:
+    image: postgres:14-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_EXPOSE_PORT=7001: ${POSTGRES_EXPOSE_PORT}
+    volumes:
+      - node_connect:/var/lib/postgresql/data
+    ports:
+      - '${POSTGRES_EXPOSE_PORT}:${POSTGRES_PORT}'
+
+volumes:
+  node_connect:
