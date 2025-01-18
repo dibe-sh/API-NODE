@@ -34,7 +34,7 @@ export class TransformInterceptor<T>
           err instanceof HttpException ? err.getStatus() : 500;
         const errorResponse = {
           statusCode: errorStatusCode,
-          data: err.response.message ?? err.message,
+          data: err?.response.data ?? err.message,
         };
         return throwError(
           () => new HttpException(errorResponse, errorStatusCode),

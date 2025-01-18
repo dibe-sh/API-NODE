@@ -5,23 +5,23 @@ CREATE TYPE "EntityType" AS ENUM ('persons', 'organizations', 'locations');
 CREATE TABLE "threads" (
     "id" TEXT NOT NULL,
     "uuid" TEXT NOT NULL,
-    "url" TEXT NOT NULL,
-    "site_full" TEXT NOT NULL,
-    "site" TEXT NOT NULL,
-    "site_section" TEXT NOT NULL,
-    "section_title" TEXT NOT NULL,
-    "title" TEXT NOT NULL,
-    "title_full" TEXT NOT NULL,
-    "published" TIMESTAMP(3) NOT NULL,
-    "replies_count" INTEGER NOT NULL,
-    "participants_count" INTEGER NOT NULL,
-    "site_type" TEXT NOT NULL,
-    "main_image" TEXT NOT NULL,
-    "country" TEXT NOT NULL,
+    "url" TEXT,
+    "site_full" TEXT,
+    "site" TEXT,
+    "site_section" TEXT,
+    "section_title" TEXT,
+    "title" TEXT,
+    "title_full" TEXT,
+    "published" TIMESTAMP(3),
+    "replies_count" INTEGER,
+    "participants_count" INTEGER,
+    "site_type" TEXT,
+    "main_image" TEXT,
+    "country" TEXT,
     "site_categories" TEXT[],
-    "performance_score" INTEGER NOT NULL,
-    "domain_rank" INTEGER NOT NULL,
-    "domain_rank_updated" TIMESTAMP(3) NOT NULL,
+    "performance_score" INTEGER,
+    "domain_rank" INTEGER,
+    "domain_rank_updated" TIMESTAMP(3),
 
     CONSTRAINT "threads_pkey" PRIMARY KEY ("id")
 );
@@ -29,7 +29,7 @@ CREATE TABLE "threads" (
 -- CreateTable
 CREATE TABLE "social" (
     "id" TEXT NOT NULL,
-    "vk_shares" INTEGER NOT NULL,
+    "vk_shares" INTEGER,
     "threadId" TEXT NOT NULL,
 
     CONSTRAINT "social_pkey" PRIMARY KEY ("id")
@@ -38,9 +38,9 @@ CREATE TABLE "social" (
 -- CreateTable
 CREATE TABLE "facebook_metrics" (
     "id" TEXT NOT NULL,
-    "likes" INTEGER NOT NULL,
-    "comments" INTEGER NOT NULL,
-    "shares" INTEGER NOT NULL,
+    "likes" INTEGER,
+    "comments" INTEGER,
+    "shares" INTEGER,
     "socialId" TEXT NOT NULL,
 
     CONSTRAINT "facebook_metrics_pkey" PRIMARY KEY ("id")
@@ -50,25 +50,25 @@ CREATE TABLE "facebook_metrics" (
 CREATE TABLE "posts" (
     "id" TEXT NOT NULL,
     "uuid" TEXT NOT NULL,
-    "url" TEXT NOT NULL,
-    "ord_in_thread" INTEGER NOT NULL,
+    "url" TEXT,
+    "ord_in_thread" INTEGER,
     "parent_url" TEXT,
     "author" TEXT,
-    "published" TIMESTAMP(3) NOT NULL,
-    "title" TEXT NOT NULL,
-    "text" TEXT NOT NULL,
-    "language" TEXT NOT NULL,
+    "published" TIMESTAMP(3),
+    "title" TEXT,
+    "text" TEXT,
+    "language" TEXT,
     "highlight_text" TEXT,
     "highlight_title" TEXT,
-    "highlight_thread" TEXT,
-    "sentiment" TEXT NOT NULL,
+    "highlight_thread_title" TEXT,
+    "sentiment" TEXT,
     "categories" TEXT[],
     "topics" TEXT[],
-    "ai_allow" BOOLEAN NOT NULL,
-    "has_canonical" BOOLEAN NOT NULL,
-    "webz_reporter" BOOLEAN NOT NULL,
-    "crawled" TIMESTAMP(3) NOT NULL,
-    "updated" TIMESTAMP(3) NOT NULL,
+    "ai_allow" BOOLEAN,
+    "has_canonical" BOOLEAN,
+    "webz_reporter" BOOLEAN,
+    "crawled" TIMESTAMP(3),
+    "updated" TIMESTAMP(3),
     "rating" DOUBLE PRECISION,
     "threadId" TEXT NOT NULL,
 
@@ -78,9 +78,9 @@ CREATE TABLE "posts" (
 -- CreateTable
 CREATE TABLE "entities" (
     "id" TEXT NOT NULL,
-    "name" TEXT NOT NULL,
-    "type" "EntityType" NOT NULL,
-    "sentiment" TEXT NOT NULL,
+    "name" TEXT,
+    "type" "EntityType",
+    "sentiment" TEXT,
     "postId" TEXT NOT NULL,
 
     CONSTRAINT "entities_pkey" PRIMARY KEY ("id")
@@ -89,7 +89,7 @@ CREATE TABLE "entities" (
 -- CreateTable
 CREATE TABLE "external_links" (
     "id" TEXT NOT NULL,
-    "url" TEXT NOT NULL,
+    "url" TEXT,
     "postId" TEXT NOT NULL,
 
     CONSTRAINT "external_links_pkey" PRIMARY KEY ("id")
@@ -98,9 +98,9 @@ CREATE TABLE "external_links" (
 -- CreateTable
 CREATE TABLE "external_images" (
     "id" TEXT NOT NULL,
-    "url" TEXT NOT NULL,
+    "url" TEXT,
     "meta_info" TEXT,
-    "uuid" TEXT NOT NULL,
+    "uuid" TEXT,
     "labels" TEXT[],
     "postId" TEXT NOT NULL,
 
@@ -110,8 +110,9 @@ CREATE TABLE "external_images" (
 -- CreateTable
 CREATE TABLE "syndications" (
     "id" TEXT NOT NULL,
-    "syndicated" BOOLEAN NOT NULL,
+    "syndicated" BOOLEAN,
     "syndicate_id" TEXT,
+    "first_syndicated" BOOLEAN,
     "postId" TEXT NOT NULL,
 
     CONSTRAINT "syndications_pkey" PRIMARY KEY ("id")

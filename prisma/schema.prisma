@@ -20,25 +20,25 @@ enum EntityType {
 }
 
 model Thread {
-  id                  String   @id @default(cuid())
-  uuid                String   @unique
-  url                 String
-  site_full           String
-  site                String
-  site_section        String
-  section_title       String
-  title               String
-  title_full          String
-  published           DateTime
-  replies_count       Int
-  participants_count  Int
-  site_type           String
-  main_image          String
-  country             String
+  id                  String    @id @default(cuid())
+  uuid                String    @unique
+  url                 String?
+  site_full           String?
+  site                String?
+  site_section        String?
+  section_title       String?
+  title               String?
+  title_full          String?
+  published           DateTime?
+  replies_count       Int?
+  participants_count  Int?
+  site_type           String?
+  main_image          String?
+  country             String?
   site_categories     String[]
-  performance_score   Int
-  domain_rank         Int
-  domain_rank_updated DateTime
+  performance_score   Int?
+  domain_rank         Int?
+  domain_rank_updated DateTime?
   social              Social?
   posts               Post[]
 
@@ -48,7 +48,7 @@ model Thread {
 model Social {
   id        String           @id @default(cuid())
   facebook  FacebookMetrics? @relation(name: "FacebookMetricsToSocial")
-  vk_shares Int
+  vk_shares Int?
 
   threadId String @unique
   thread   Thread @relation(fields: [threadId], references: [id])
@@ -58,9 +58,9 @@ model Social {
 
 model FacebookMetrics {
   id       String @id @default(cuid())
-  likes    Int
-  comments Int
-  shares   Int
+  likes    Int?
+  comments Int?
+  shares   Int?
 
   socialId String  @unique
   social   Social? @relation(name: "FacebookMetricsToSocial", fields: [socialId], references: [id])
@@ -69,32 +69,32 @@ model FacebookMetrics {
 }
 
 model Post {
-  id               String          @id @default(cuid())
-  uuid             String          @unique
-  url              String
-  ord_in_thread    Int
-  parent_url       String?
-  author           String?
-  published        DateTime
-  title            String
-  text             String
-  language         String
-  highlight_text   String?
-  highlight_title  String?
-  highlight_thread String?
-  sentiment        String
-  categories       String[]
-  topics           String[]
-  ai_allow         Boolean
-  has_canonical    Boolean
-  webz_reporter    Boolean
-  crawled          DateTime
-  updated          DateTime
-  rating           Float?
-  entities         Entity[]
-  external_links   ExternalLink[]
-  external_images  ExternalImage[]
-  syndication      Syndication?
+  id                     String          @id @default(cuid())
+  uuid                   String          @unique
+  url                    String?
+  ord_in_thread          Int?
+  parent_url             String?
+  author                 String?
+  published              DateTime?
+  title                  String?
+  text                   String?
+  language               String?
+  highlight_text         String?
+  highlight_title        String?
+  highlight_thread_title String?
+  sentiment              String?
+  categories             String[]
+  topics                 String[]
+  ai_allow               Boolean?
+  has_canonical          Boolean?
+  webz_reporter          Boolean?
+  crawled                DateTime?
+  updated                DateTime?
+  rating                 Float?
+  entities               Entity[]
+  external_links         ExternalLink[]
+  external_images        ExternalImage[]
+  syndication            Syndication?
 
   threadId String
   thread   Thread @relation(fields: [threadId], references: [id])
@@ -103,10 +103,10 @@ model Post {
 }
 
 model Entity {
-  id        String     @id @default(cuid())
-  name      String
-  type      EntityType
-  sentiment String
+  id        String      @id @default(cuid())
+  name      String?
+  type      EntityType?
+  sentiment String?
 
   postId String
   post   Post   @relation(fields: [postId], references: [id])
@@ -115,8 +115,8 @@ model Entity {
 }
 
 model ExternalLink {
-  id  String @id @default(cuid())
-  url String
+  id  String  @id @default(cuid())
+  url String?
 
   postId String
   post   Post   @relation(fields: [postId], references: [id])
@@ -126,9 +126,9 @@ model ExternalLink {
 
 model ExternalImage {
   id        String   @id @default(cuid())
-  url       String
+  url       String?
   meta_info String?
-  uuid      String
+  uuid      String?
   labels    String[]
 
   postId String
@@ -138,9 +138,10 @@ model ExternalImage {
 }
 
 model Syndication {
-  id           String  @id @default(cuid())
-  syndicated   Boolean
-  syndicate_id String?
+  id               String   @id @default(cuid())
+  syndicated       Boolean?
+  syndicate_id     String?
+  first_syndicated Boolean?
 
   postId String @unique
   post   Post   @relation(fields: [postId], references: [id])

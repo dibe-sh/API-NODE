@@ -49,7 +49,7 @@ export const winstonConfig = {
 export const logger = winston.createLogger({
   level: process.env.LOG_LEVEL ?? 'debug',
   format: formatter,
-  defaultMeta: { service: 'webz-api' },
+  defaultMeta: { service: 'api-node' },
   transports: [
     winstonConfig.console,
     winstonConfig.errorFile,
