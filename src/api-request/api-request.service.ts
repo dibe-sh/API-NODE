@@ -40,6 +40,11 @@ export class APIRequestService {
     return queryString ? `${baseUrl}&q=${queryString}` : baseUrl;
   }
 
+  getNextUrl(nextUrl: string): string {
+    const baseUrl = `${this.base_url}`;
+    return nextUrl ? `${baseUrl}${decodeURI(nextUrl)}` : baseUrl;
+  }
+
   async makeApiRequest<T>(url: string, requestId: string) {
     try {
       logger.debug('Making API request', { requestId, url });

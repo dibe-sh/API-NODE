@@ -3,12 +3,11 @@ import 'winston-daily-rotate-file';
 import * as path from 'path';
 
 const cliFormatter = winston.format.printf(
-  ({ level, message, timestamp, context }) => {
+  ({ level, message, timestamp, requestId, ...meta }) => {
     const colorizer = winston.format.colorize();
-    const timestampStr = `[${timestamp}]`;
-    const levelStr = colorizer.colorize(level, `[${level.toUpperCase()}]`);
-    const contextStr = context ? `[${context}]` : '';
-    return `${timestampStr} ${levelStr} ${contextStr} ${message}`;
+    const timestampStr = timestamp;
+    const levelStr = colorizer.colorize(level, `APP [${level.toUpperCase()}]`);
+    return `${levelStr} - ${requestId} -  ${timestampStr} - ${JSON.stringify(message).replaceAll(`"`, '')}\n${JSON.stringify(meta).replaceAll('\\', '')}\n`;
   },
 );
 const formatter = winston.format.combine(

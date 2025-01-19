@@ -8,7 +8,7 @@ export class RequestLoggerMiddleware implements NestMiddleware {
     const requestId = Math.random().toString(36).substring(7);
     req['requestId'] = requestId;
 
-    logger.info('Incoming request', {
+    logger.info(`Incoming request [${req.method}:${req.url}]`, {
       requestId,
       method: req.method,
       url: req.url,
@@ -19,7 +19,7 @@ export class RequestLoggerMiddleware implements NestMiddleware {
     // Log response
     const originalSend = res.send;
     res.send = function (body) {
-      logger.info('Outgoing response', {
+      logger.info(`Outgoing response [Status :${res.statusCode}]`, {
         requestId,
         statusCode: res.statusCode,
         body: body,

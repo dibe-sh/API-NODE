@@ -10,7 +10,7 @@ async function bootstrap() {
   const PORT = appConfig.get('PORT') ?? 7002;
 
   app.enableCors({
-    // TODO: Currently Configured to be accessed by *, change as per required
+    // Currently Configured to be accessed by *, change as per required
     origin: '*',
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     preflightContinue: false,

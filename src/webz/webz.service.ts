@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreatePostDto, Thread } from './dto/create-post.dto';
 import { WebzOptions } from './interfaces/webz-options.interface';
@@ -8,8 +8,6 @@ import { APIRequestService } from '../api-request/api-request.service';
 
 @Injectable()
 export class WebzService {
-  private readonly logger = new Logger(WebzService.name);
-
   constructor(
     private readonly prisma: PrismaService,
     private readonly apiRequestService: APIRequestService,
@@ -17,23 +15,25 @@ export class WebzService {
 
   private prepareThreadData(thread: Thread) {
     return {
-      url: thread.url,
-      site_full: thread.site_full,
-      site: thread.site,
-      site_section: thread.site_section,
-      site_categories: thread.site_categories,
-      section_title: thread.section_title,
-      title: thread.title,
-      title_full: thread.title_full,
+      ...thread,
       published: new Date(thread.published),
-      replies_count: thread.replies_count,
-      participants_count: thread.participants_count,
-      site_type: thread.site_type,
-      country: thread.country,
-      main_image: thread.main_image,
-      performance_score: thread.performance_score,
-      domain_rank: thread.domain_rank,
       domain_rank_updated: new Date(thread.domain_rank_updated),
+      social: thread.social
+        ? {
+            create: {
+              vk_shares: thread.social.vk.shares,
+              facebook: thread.social.facebook
+                ? {
+                    create: {
+                      likes: thread.social.facebook.likes,
+                      comments: thread.social.facebook.comments,
+                      shares: thread.social.facebook.shares,
+                    },
+                  }
+                : undefined,
+            },
+          }
+        : undefined,
     };
   }
 
@@ -48,62 +48,9 @@ export class WebzService {
         ...postData
       } = createPostDto;
 
-      const createSocial = {
-        vk_shares: thread.social.vk.shares,
-        facebook: thread.social.facebook
-          ? {
-              create: {
-                likes: thread.social.facebook.likes,
-                comments: thread.social.facebook.comments,
-                shares: thread.social.facebook.shares,
-              },
-            }
-          : undefined,
-      };
-
-      const threadData = this.prepareThreadData(thread);
-
       // Handle Thread Upsert
-      const threadRecord = await prisma.thread.upsert({
-        where: { uuid: thread.uuid },
-        create: {
-          uuid: thread.uuid,
-          social: thread.social
-            ? {
-                create: createSocial,
-              }
-            : undefined,
-          ...threadData,
-        },
-        update: {
-          social: thread.social
-            ? {
-                upsert: {
-                  create: createSocial,
-                  update: {
-                    vk_shares: thread.social.vk.shares,
-                    facebook: thread.social.facebook
-                      ? {
-                          upsert: {
-                            create: {
-                              likes: thread.social.facebook.likes,
-                              comments: thread.social.facebook.comments,
-                              shares: thread.social.facebook.shares,
-                            },
-                            update: {
-                              likes: thread.social.facebook.likes,
-                              comments: thread.social.facebook.comments,
-                              shares: thread.social.facebook.shares,
-                            },
-                          },
-                        }
-                      : undefined,
-                  },
-                },
-              }
-            : undefined,
-          ...threadData,
-        },
+      const threadRecord = await prisma.thread.create({
+        data: this.prepareThreadData(thread),
       });
 
       // Mapping Issue: Thus Removing Objects and manually adding later
@@ -115,6 +62,8 @@ export class WebzService {
       const postRecord = await prisma.post.create({
         data: {
           ...postData,
+          categories: postData.categories ?? [],
+          topics: postData.topics ?? [],
           published: new Date(postData.published),
           crawled: new Date(postData.crawled),
           updated: new Date(postData.updated),
@@ -142,15 +91,16 @@ export class WebzService {
             ],
           },
           external_links: {
-            create: external_links.map((link) => ({ url: link })),
+            create: external_links.map((link) => ({ url: link })) ?? [],
           },
           external_images: {
-            create: external_images.map((image) => ({
-              url: image.url,
-              meta_info: image.meta_info,
-              uuid: image.uuid,
-              labels: image.label,
-            })),
+            create:
+              external_images.map((image) => ({
+                url: image.url,
+                meta_info: image.meta_info,
+                uuid: image.uuid,
+                labels: image.label ?? [],
+              })) ?? [],
           },
           syndication: {
             create: {
@@ -197,7 +147,7 @@ export class WebzService {
         response;
 
       // Store Current post on batch
-      // this.storeBatch(posts, requestId);
+      this.storeBatch(posts, requestId);
 
       // Callback Execution if provided
       if (options.callback) {
@@ -209,7 +159,7 @@ export class WebzService {
 
       //  If more results are available fetch next using iteration
       isMoreResultsAvailable = moreResultsAvailable > 0;
-      nextUrl = next;
+      nextUrl = this.apiRequestService.getNextUrl(next);
 
       // Rate Limiting request
       await this.apiRequestService.sleep(1000);
