@@ -123,6 +123,7 @@ This document represents database schema diagram generated from [drawdb app](htt
 | Name | Unique | Fields |
 |------|--------|--------|
 | posts_uuid_key | ✅ | uuid |
+| posts_threadId_key | ✅ | threadId |
 
 ### entities
 
@@ -160,6 +161,7 @@ This document represents database schema diagram generated from [drawdb app](htt
 | **id** | TEXT | 🔑 PK, not null  |  | |
 | **syndicated** | BOOLEAN | not null  |  | |
 | **syndicate_id** | TEXT | not null  |  | |
+| **first_syndicated** | BOOLEAN | not null  |  | |
 | **postId** | TEXT | not null  | syndications_postId_fk | |
 
 #### Indexes
