@@ -70,7 +70,7 @@ CREATE TABLE "posts" (
     "crawled" TIMESTAMP(3),
     "updated" TIMESTAMP(3),
     "rating" DOUBLE PRECISION,
-    "threadId" TEXT NOT NULL,
+    "threadId" TEXT,
 
     CONSTRAINT "posts_pkey" PRIMARY KEY ("id")
 );
@@ -131,6 +131,9 @@ CREATE UNIQUE INDEX "facebook_metrics_socialId_key" ON "facebook_metrics"("socia
 CREATE UNIQUE INDEX "posts_uuid_key" ON "posts"("uuid");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "posts_threadId_key" ON "posts"("threadId");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "syndications_postId_key" ON "syndications"("postId");
 
 -- AddForeignKey
@@ -140,7 +143,7 @@ ALTER TABLE "social" ADD CONSTRAINT "social_threadId_fkey" FOREIGN KEY ("threadI
 ALTER TABLE "facebook_metrics" ADD CONSTRAINT "facebook_metrics_socialId_fkey" FOREIGN KEY ("socialId") REFERENCES "social"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "posts" ADD CONSTRAINT "posts_threadId_fkey" FOREIGN KEY ("threadId") REFERENCES "threads"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "posts" ADD CONSTRAINT "posts_threadId_fkey" FOREIGN KEY ("threadId") REFERENCES "threads"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "entities" ADD CONSTRAINT "entities_postId_fkey" FOREIGN KEY ("postId") REFERENCES "posts"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

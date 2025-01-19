@@ -40,7 +40,7 @@ model Thread {
   domain_rank         Int?
   domain_rank_updated DateTime?
   social              Social?
-  posts               Post[]
+  posts               Post?
 
   @@map("threads")
 }
@@ -96,8 +96,8 @@ model Post {
   external_images        ExternalImage[]
   syndication            Syndication?
 
-  threadId String
-  thread   Thread @relation(fields: [threadId], references: [id])
+  threadId String? @unique
+  thread   Thread? @relation(fields: [threadId], references: [id])
 
   @@map("posts")
 }

@@ -2,6 +2,15 @@ import * as winston from 'winston';
 import 'winston-daily-rotate-file';
 import * as path from 'path';
 
+const cliFormatter = winston.format.printf(
+  ({ level, message, timestamp, context }) => {
+    const colorizer = winston.format.colorize();
+    const timestampStr = `[${timestamp}]`;
+    const levelStr = colorizer.colorize(level, `[${level.toUpperCase()}]`);
+    const contextStr = context ? `[${context}]` : '';
+    return `${timestampStr} ${levelStr} ${contextStr} ${message}`;
+  },
+);
 const formatter = winston.format.combine(
   winston.format.timestamp(),
   winston.format.errors({ stack: true }),
@@ -21,8 +30,8 @@ export const winstonConfig = {
   console: new winston.transports.Console({
     level: process.env.LOG_LEVEL ?? 'debug',
     format: winston.format.combine(
-      winston.format.colorize(),
-      winston.format.simple(),
+      winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
+      cliFormatter,
     ),
   }),
 

@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { Observable, throwError } from 'rxjs';
 import { map, catchError } from 'rxjs/operators';
+import { Prisma } from '@prisma/client';
 
 export interface Response<T> {
   statusCode: number;
@@ -30,16 +31,44 @@ export class TransformInterceptor<T>
         data,
       })),
       catchError((err) => {
+        // Handle Prisma errors explicitly
+        if (err instanceof Prisma.PrismaClientKnownRequestError) {
+          // Map Prisma error codes to user-friendly messages
+          const message = this.getPrismaErrorMessage(err);
+          const errorResponse = {
+            statusCode: 400, // Return 400 (Bad Request) for Prisma errors
+            data: message,
+          };
+          return throwError(() => new HttpException(errorResponse, 400));
+        }
+
+        // For other errors, return generic error response
         const errorStatusCode =
           err instanceof HttpException ? err.getStatus() : 500;
         const errorResponse = {
           statusCode: errorStatusCode,
-          data: err?.response.data ?? err.message,
+          data: 'An unexpected error occurred. Please try again later.',
         };
         return throwError(
           () => new HttpException(errorResponse, errorStatusCode),
         );
       }),
     );
+  }
+
+  /**
+   * Maps Prisma error codes to user-friendly messages.
+   */
+  private getPrismaErrorMessage(
+    err: Prisma.PrismaClientKnownRequestError,
+  ): string {
+    switch (err.code) {
+      case 'P2002':
+        return 'A unique constraint violation occurred. Please check your input.';
+      case 'P2025':
+        return 'The requested record was not found.';
+      default:
+        return 'A database error occurred. Please try again.';
+    }
   }
 }

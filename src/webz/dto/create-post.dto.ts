@@ -9,39 +9,43 @@ import {
   IsDate,
 } from 'class-validator';
 
+export class Social {
+  facebook: {
+    likes: number;
+    comments: number;
+    shares: number;
+  };
+  vk: {
+    shares: number;
+  };
+}
+
+export class Thread {
+  uuid: string;
+  url: string;
+  site_full: string;
+  site: string;
+  site_section?: string;
+  site_categories?: string[];
+  section_title?: string;
+  title: string;
+  title_full?: string;
+  published: Date;
+  replies_count: number;
+  participants_count: number;
+  site_type: 'news' | 'blogs' | 'discussions';
+  country?: string;
+  main_image?: string;
+  performance_score: number;
+  domain_rank?: number | null;
+  domain_rank_updated?: Date | null;
+  social: Social;
+}
+
 export class CreatePostDto {
   @IsOptional()
   @IsObject()
-  thread: {
-    uuid: string;
-    url: string;
-    site_full: string;
-    site: string;
-    site_section?: string;
-    site_categories?: string[];
-    section_title?: string;
-    title: string;
-    title_full?: string;
-    published: Date;
-    replies_count: number;
-    participants_count: number;
-    site_type: 'news' | 'blogs' | 'discussions';
-    country?: string;
-    main_image?: string;
-    performance_score: number;
-    domain_rank?: number | null;
-    domain_rank_updated?: Date | null;
-    social: {
-      facebook: {
-        likes: number;
-        comments: number;
-        shares: number;
-      };
-      vk: {
-        shares: number;
-      };
-    };
-  };
+  thread: Thread;
 
   @IsString()
   @IsNotEmpty()
