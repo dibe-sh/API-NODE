@@ -5,5 +5,8 @@ export interface WebzCallbackData {
 
 export interface WebzOptions {
   queryString?: string;
+}
+
+export interface WebzFetchAndStore extends WebzOptions {
   callback?: (data: WebzCallbackData) => void;
 }

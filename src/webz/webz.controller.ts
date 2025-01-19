@@ -24,9 +24,11 @@ export class WebzController {
         `DATA : ${data.received} posts received and ${data.remaining} posts remaining`,
       );
     };
-    return this.webzService.bulkFetchAndStore({
-      queryString: queryString ?? query,
+    return this.webzService.bulkFetchAndStore(
+      {
+        queryString: queryString ?? query,
+      },
       callback,
-    });
+    );
   }
 }

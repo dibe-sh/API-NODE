@@ -1,7 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreatePostDto, Thread } from './dto/create-post.dto';
-import { WebzOptions } from './interfaces/webz-options.interface';
+import {
+  WebzCallbackData,
+  WebzFetchAndStore,
+  WebzOptions,
+} from './interfaces/webz-options.interface';
 import { logger } from '../logger/winston.config';
 import { WebzResponse } from './interfaces/webz-response.interface';
 import { APIRequestService } from '../api-request/api-request.service';
@@ -130,7 +134,7 @@ export class WebzService {
     });
   }
 
-  async fetchAndStore(options: WebzOptions, requestId: string) {
+  async fetchAndStore(options: WebzFetchAndStore, requestId: string) {
     let nextUrl = this.apiRequestService.buildInitialUrl(options.queryString);
     let isMoreResultsAvailable = true;
     do {
@@ -147,6 +151,7 @@ export class WebzService {
         response;
 
       // Store Current post on batch
+      // TODO: Handel Duplicate UUID and data request
       this.storeBatch(posts, requestId);
 
       // Callback Execution if provided
@@ -166,12 +171,15 @@ export class WebzService {
     } while (isMoreResultsAvailable);
   }
 
-  async bulkFetchAndStore(options: WebzOptions) {
+  async bulkFetchAndStore(
+    options: WebzOptions,
+    callback?: (data: WebzCallbackData) => void,
+  ) {
     // Unique identifier for request made
     const requestId = Math.random().toString(36).substring(7);
     logger.info('Starting post fetch operation', { requestId });
 
-    this.fetchAndStore(options, requestId).catch((error) => {
+    this.fetchAndStore({ ...options, callback }, requestId).catch((error) => {
       logger.error('Error in fetch operation', {
         requestId,
         error: this.apiRequestService.formatError(error),
