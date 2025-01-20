@@ -32,7 +32,7 @@ Navigate to project directory on terminal and.
 
 1. Run `yarn setup` -> This will install all dependencies and make sure your `environment` setup is done.
 
-2. Replace your `GET_YOUR_TOKEN` token on `.env` file with your `WEBZIO_TOKEN`
+2. Replace your `GET_YOUR_TOKEN` token on [`.env`](.env) file with your `WEBZIO_TOKEN`
 
 ```text
 WEBZIO_TOKEN = GET_YOUR_TOKEN

@@ -135,39 +135,52 @@ export class WebzService {
   }
 
   private async fetchAndStore(options: WebzFetchAndStore, requestId: string) {
+    logger.debug('Fetch and Store initiated', { requestId });
     let nextUrl = this.apiRequestService.buildInitialUrl(options.queryString);
     let isMoreResultsAvailable = true;
     do {
-      const response =
-        await this.apiRequestService.makeApiRequest<WebzResponse>(
-          nextUrl,
+      try {
+        const response =
+          await this.apiRequestService.makeApiRequest<WebzResponse>(
+            nextUrl,
+            requestId,
+          );
+        if (!response) {
+          break;
+        }
+
+        const {
+          posts,
+          moreResultsAvailable,
+          next,
+          totalResults,
+        }: WebzResponse = response;
+
+        // Store Current post on batch
+        // TODO: Handel Duplicate UUID and data request
+        this.storeBatch(posts, requestId);
+
+        // Callback Execution if provided
+        if (options.callback) {
+          options.callback({
+            received: posts.length,
+            remaining: totalResults,
+          });
+        }
+
+        //  If more results are available fetch next using iteration
+        isMoreResultsAvailable = moreResultsAvailable > 0;
+        nextUrl = this.apiRequestService.getNextUrl(next);
+
+        // Rate Limiting request
+        await this.apiRequestService.sleep(1000);
+      } catch (error) {
+        logger.error('Fetch Error', {
           requestId,
-        );
-      if (!response) {
-        break;
-      }
-
-      const { posts, moreResultsAvailable, next, totalResults }: WebzResponse =
-        response;
-
-      // Store Current post on batch
-      // TODO: Handel Duplicate UUID and data request
-      this.storeBatch(posts, requestId);
-
-      // Callback Execution if provided
-      if (options.callback) {
-        options.callback({
-          received: posts.length,
-          remaining: totalResults,
+          error: this.apiRequestService.formatError(error),
         });
+        continue;
       }
-
-      //  If more results are available fetch next using iteration
-      isMoreResultsAvailable = moreResultsAvailable > 0;
-      nextUrl = this.apiRequestService.getNextUrl(next);
-
-      // Rate Limiting request
-      await this.apiRequestService.sleep(1000);
     } while (isMoreResultsAvailable);
   }
 
@@ -191,12 +204,11 @@ export class WebzService {
   }
 
   private async storeBatch(posts: CreatePostDto[], requestId: string) {
+    logger.info(`Starting batch storage`, {
+      requestId,
+      postCount: posts.length,
+    });
     try {
-      logger.info(`Starting batch storage`, {
-        requestId,
-        postCount: posts.length,
-      });
-
       for (const post of posts) {
         await this.prisma.$transaction(async () => {
           await this.createPost(post);

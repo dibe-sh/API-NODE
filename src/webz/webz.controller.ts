@@ -19,8 +19,7 @@ export class WebzController {
   @Get('fetch')
   async fetchPosts(@Query('query') queryString) {
     const callback = (data: WebzCallbackData) => {
-      const remaining =
-        data.remaining - data.received < 0 ? data.remaining - data.received : 0;
+      const remaining = data.remaining - data.received;
       //  Perform Call back action as required
       logger.info(
         `DATA : ${data.received} posts received and ${remaining} posts remaining`,

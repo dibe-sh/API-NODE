@@ -46,11 +46,15 @@ export class APIRequestService {
   }
 
   async makeApiRequest<T>(url: string, requestId: string) {
+    logger.debug('Making API request', { requestId, url });
     try {
-      logger.debug('Making API request', { requestId, url });
       const response = await axios.get<T>(url);
       return response.data;
     } catch (error) {
+      logger.error('Making API request', {
+        requestId,
+        error: this.formatError(error),
+      });
       if (this.shouldRetry(error)) {
         logger.warn('Retrying failed request', {
           requestId,
