@@ -134,7 +134,7 @@ export class WebzService {
     });
   }
 
-  async fetchAndStore(options: WebzFetchAndStore, requestId: string) {
+  private async fetchAndStore(options: WebzFetchAndStore, requestId: string) {
     let nextUrl = this.apiRequestService.buildInitialUrl(options.queryString);
     let isMoreResultsAvailable = true;
     do {
