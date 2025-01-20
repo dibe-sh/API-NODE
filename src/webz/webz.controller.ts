@@ -18,11 +18,13 @@ export class WebzController {
 
   @Get('fetch')
   async fetchPosts(@Query('query') queryString) {
+    const requestId = Math.random().toString(36).substring(7);
     const callback = (data: WebzCallbackData) => {
       const remaining = data.remaining - data.received;
       //  Perform Call back action as required
       logger.info(
         `DATA : ${data.received} posts received and ${remaining} posts remaining`,
+        { requestId },
       );
     };
     return this.webzService.bulkFetchAndStore(

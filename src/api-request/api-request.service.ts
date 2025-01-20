@@ -7,10 +7,13 @@ import { logger } from '../logger/winston.config';
 export class APIRequestService {
   private readonly api_token: string;
   private readonly base_url: string;
+  private readonly batch_size: number;
 
   constructor(private readonly configService: ConfigService) {
     this.api_token = this.configService.get<string>('WEBZIO_TOKEN');
     this.base_url = this.configService.get<string>('WEBZIO_BASE_URL');
+    this.batch_size =
+      this.configService.get<number>('WEBZIO_BATCH_SIZE') ?? 100;
   }
 
   private shouldRetry(error: any): boolean {
@@ -36,17 +39,19 @@ export class APIRequestService {
   }
 
   buildInitialUrl(queryString: string): string {
-    const baseUrl = `${this.base_url}/filterWebContent?token=${this.api_token}`;
+    const baseUrl = `${this.base_url}/filterWebContent?token=${this.api_token}&size=${this.batch_size}`;
     return queryString ? `${baseUrl}&q=${queryString}` : baseUrl;
   }
 
   getNextUrl(nextUrl: string): string {
     const baseUrl = `${this.base_url}`;
-    return nextUrl ? `${baseUrl}${decodeURI(nextUrl)}` : baseUrl;
+    return nextUrl
+      ? `${baseUrl}${decodeURI(nextUrl)}&size=${this.batch_size}`
+      : baseUrl;
   }
 
   async makeApiRequest<T>(url: string, requestId: string) {
-    logger.debug('Making API request', { requestId, url });
+    logger.info('Making API request', { requestId, url });
     try {
       const response = await axios.get<T>(url);
       return response.data;

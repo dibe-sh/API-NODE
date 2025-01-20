@@ -15,6 +15,7 @@ describe('APIRequestService', () => {
       const config = {
         WEBZIO_TOKEN: 'test-token',
         WEBZIO_BASE_URL: 'https://api.example.com',
+        WEBZIO_BATCH_SIZE: 100,
       };
       return config[key];
     }),
@@ -42,14 +43,14 @@ describe('APIRequestService', () => {
     it('should build the correct URL with query string', () => {
       const result = service.buildInitialUrl('test-query');
       expect(result).toBe(
-        'https://api.example.com/filterWebContent?token=test-token&q=test-query',
+        `https://api.example.com/filterWebContent?token=test-token&size=${mockConfigService.get('WEBZIO_BATCH_SIZE')}&q=test-query`,
       );
     });
 
     it('should build the correct URL without query string', () => {
       const result = service.buildInitialUrl('');
       expect(result).toBe(
-        'https://api.example.com/filterWebContent?token=test-token',
+        `https://api.example.com/filterWebContent?token=test-token&size=${mockConfigService.get('WEBZIO_BATCH_SIZE')}`,
       );
     });
   });
@@ -57,7 +58,9 @@ describe('APIRequestService', () => {
   describe('getNextUrl', () => {
     it('should return the full next URL when provided', () => {
       const result = service.getNextUrl('/next-page');
-      expect(result).toBe('https://api.example.com/next-page');
+      expect(result).toBe(
+        `https://api.example.com/next-page&size=${mockConfigService.get('WEBZIO_BATCH_SIZE')}`,
+      );
     });
 
     it('should return the base URL if no next URL is provided', () => {
@@ -97,7 +100,7 @@ describe('APIRequestService', () => {
         'test-request',
       );
       expect(result).toEqual({ success: true });
-      expect(logger.debug).toHaveBeenCalledWith('Making API request', {
+      expect(logger.info).toHaveBeenCalledWith('Making API request', {
         requestId: 'test-request',
         url: 'https://api.example.com/test',
       });

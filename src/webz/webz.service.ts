@@ -17,7 +17,7 @@ export class WebzService {
     private readonly apiRequestService: APIRequestService,
   ) {}
 
-  private prepareThreadData(thread: Thread) {
+  private prepareThreadCreateData(thread: Thread) {
     return {
       ...thread,
       published: new Date(thread.published),
@@ -41,6 +41,30 @@ export class WebzService {
     };
   }
 
+  private prepareThreadUpdateData(thread: Thread) {
+    return {
+      ...thread,
+      published: new Date(thread.published),
+      domain_rank_updated: new Date(thread.domain_rank_updated),
+      social: thread.social
+        ? {
+            update: {
+              vk_shares: thread.social.vk.shares,
+              facebook: thread.social.facebook
+                ? {
+                    update: {
+                      likes: thread.social.facebook.likes,
+                      comments: thread.social.facebook.comments,
+                      shares: thread.social.facebook.shares,
+                    },
+                  }
+                : undefined,
+            },
+          }
+        : undefined,
+    };
+  }
+
   async createPost(createPostDto: CreatePostDto) {
     return await this.prisma.$transaction(async (prisma) => {
       const {
@@ -49,12 +73,15 @@ export class WebzService {
         external_links,
         external_images,
         syndication,
+        uuid,
         ...postData
       } = createPostDto;
 
       // Handle Thread Upsert
-      const threadRecord = await prisma.thread.create({
-        data: this.prepareThreadData(thread),
+      const threadRecord = await prisma.thread.upsert({
+        where: { uuid: thread.uuid },
+        create: this.prepareThreadCreateData(thread),
+        update: this.prepareThreadUpdateData(thread),
       });
 
       // Mapping Issue: Thus Removing Objects and manually adding later
@@ -62,75 +89,185 @@ export class WebzService {
       delete postData.highlightThreadTitle;
       delete postData.highlightTitle;
 
-      // Handle Post Creation
-      const postRecord = await prisma.post.create({
-        data: {
-          ...postData,
-          categories: postData.categories ?? [],
-          topics: postData.topics ?? [],
-          published: new Date(postData.published),
-          crawled: new Date(postData.crawled),
-          updated: new Date(postData.updated),
-          threadId: threadRecord.id,
-          highlight_text: createPostDto.highlightText,
-          highlight_thread_title: createPostDto.highlightThreadTitle,
-          highlight_title: createPostDto.highlightTitle,
-          entities: {
-            create: [
-              ...(entities.persons?.map((person) => ({
-                name: person.name,
-                type: 'persons' as const,
-                sentiment: person.sentiment,
-              })) ?? []),
-              ...(entities.organizations?.map((org) => ({
-                name: org.name,
-                type: 'organizations' as const,
-                sentiment: org.sentiment,
-              })) ?? []),
-              ...(entities.locations?.map((location) => ({
-                name: location.name,
-                type: 'locations' as const,
-                sentiment: location.sentiment,
-              })) ?? []),
-            ],
-          },
-          external_links: {
-            create: external_links.map((link) => ({ url: link })) ?? [],
-          },
-          external_images: {
-            create:
-              external_images.map((image) => ({
-                url: image.url,
-                meta_info: image.meta_info,
-                uuid: image.uuid,
-                labels: image.label ?? [],
-              })) ?? [],
-          },
-          syndication: {
-            create: {
-              syndicated: syndication.syndicated,
-              syndicate_id: syndication.syndicate_id,
-              first_syndicated: syndication.first_syndicated,
-            },
-          },
-        },
+      // Prepare common data for create and update
+      const commonPostData = {
+        ...postData,
+        uuid,
+        categories: postData.categories ?? [],
+        topics: postData.topics ?? [],
+        published: new Date(postData.published),
+        crawled: new Date(postData.crawled),
+        updated: new Date(postData.updated),
+        threadId: threadRecord.id,
+        highlight_text: createPostDto.highlightText,
+        highlight_thread_title: createPostDto.highlightThreadTitle,
+        highlight_title: createPostDto.highlightTitle,
+      };
+
+      // First check if post exists
+      const existingPost = await prisma.post.findUnique({
+        where: { uuid },
         include: {
-          thread: {
-            include: {
-              social: {
-                include: {
-                  facebook: true,
-                },
-              },
-            },
-          },
           entities: true,
           external_links: true,
           external_images: true,
           syndication: true,
         },
       });
-      return postRecord;
+
+      // Prepare entities data
+      const entitiesData = [
+        ...(entities.persons?.map((person) => ({
+          name: person.name,
+          type: 'persons' as const,
+          sentiment: person.sentiment,
+        })) ?? []),
+        ...(entities.organizations?.map((org) => ({
+          name: org.name,
+          type: 'organizations' as const,
+          sentiment: org.sentiment,
+        })) ?? []),
+        ...(entities.locations?.map((location) => ({
+          name: location.name,
+          type: 'locations' as const,
+          sentiment: location.sentiment,
+        })) ?? []),
+      ];
+
+      if (existingPost) {
+        // Update existing post
+        const postRecord = await prisma.post.update({
+          where: { uuid },
+          data: {
+            ...commonPostData,
+            // First delete all existing entities
+            entities: {
+              deleteMany: {},
+              // Then create new entities
+              createMany: {
+                data: entitiesData,
+              },
+            },
+            // Update external links with safe delete
+            external_links: {
+              deleteMany: {
+                url: {
+                  notIn: external_links,
+                },
+              },
+              createMany: {
+                data: external_links
+                  .filter(
+                    (link) =>
+                      !existingPost.external_links.some(
+                        (el) => el.url === link,
+                      ),
+                  )
+                  .map((link) => ({ url: link })),
+                skipDuplicates: true,
+              },
+            },
+            // Update external images
+            external_images: {
+              deleteMany: {
+                uuid: {
+                  notIn: external_images.map((img) => img.uuid),
+                },
+              },
+              createMany: {
+                data: external_images.map((image) => ({
+                  url: image.url,
+                  meta_info: image.meta_info,
+                  uuid: image.uuid,
+                  labels: image.label ?? [],
+                })),
+                skipDuplicates: true,
+              },
+            },
+            // Update syndication if it exists, create if it doesn't
+            syndication: existingPost.syndication
+              ? {
+                  update: {
+                    syndicated: syndication.syndicated,
+                    syndicate_id: syndication.syndicate_id,
+                    first_syndicated: syndication.first_syndicated,
+                  },
+                }
+              : {
+                  create: {
+                    syndicated: syndication.syndicated,
+                    syndicate_id: syndication.syndicate_id,
+                    first_syndicated: syndication.first_syndicated,
+                  },
+                },
+          },
+          include: {
+            thread: {
+              include: {
+                social: {
+                  include: {
+                    facebook: true,
+                  },
+                },
+              },
+            },
+            entities: true,
+            external_links: true,
+            external_images: true,
+            syndication: true,
+          },
+        });
+        return postRecord;
+      } else {
+        // Create new post
+        return await prisma.post.create({
+          data: {
+            ...commonPostData,
+            entities: {
+              createMany: {
+                data: entitiesData,
+              },
+            },
+            external_links: {
+              createMany: {
+                data: external_links.map((link) => ({ url: link })),
+              },
+            },
+            external_images: {
+              createMany: {
+                data: external_images.map((image) => ({
+                  url: image.url,
+                  meta_info: image.meta_info,
+                  uuid: image.uuid,
+                  labels: image.label ?? [],
+                })),
+              },
+            },
+            syndication: {
+              create: {
+                syndicated: syndication.syndicated,
+                syndicate_id: syndication.syndicate_id,
+                first_syndicated: syndication.first_syndicated,
+              },
+            },
+          },
+          include: {
+            thread: {
+              include: {
+                social: {
+                  include: {
+                    facebook: true,
+                  },
+                },
+              },
+            },
+            entities: true,
+            external_links: true,
+            external_images: true,
+            syndication: true,
+          },
+        });
+      }
     });
   }
 
@@ -171,6 +308,13 @@ export class WebzService {
         //  If more results are available fetch next using iteration
         isMoreResultsAvailable = moreResultsAvailable > 0;
         nextUrl = this.apiRequestService.getNextUrl(next);
+        logger.info('Fetch Completed:', {
+          requestId,
+          nextUrl,
+          isMoreResultsAvailable,
+          totalResults,
+          received: posts.length,
+        });
 
         // Rate Limiting request
         await this.apiRequestService.sleep(1000);

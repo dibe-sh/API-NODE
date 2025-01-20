@@ -32,14 +32,8 @@ const createPostDto: CreatePostDto = {
     domain_rank: 15976,
     domain_rank_updated: new Date('2025-01-13T23:00:00.000+02:00'),
     social: {
-      facebook: {
-        likes: 0,
-        comments: 0,
-        shares: 0,
-      },
-      vk: {
-        shares: 0,
-      },
+      facebook: { likes: 0, comments: 0, shares: 0 },
+      vk: { shares: 0 },
     },
   },
   uuid: '1c2af264ac6cc5381d3f6147260023e781dddb67',
@@ -81,41 +75,20 @@ const createPostDto: CreatePostDto = {
   updated: new Date('2025-01-15T16:32:39.835+02:00'),
 };
 
-const thread: Thread = {
-  uuid: 'random-uuid',
-  url: 'www.dibe.sh',
-  site_full: 'site_full',
-  site: 'dibe.sh',
-  site_section: 'site_section',
-  section_title: 'section_title',
-  title: 'title',
-  title_full: 'title_full',
-  replies_count: 12,
-  participants_count: 12,
-  site_type: 'news',
-  country: 'NP',
-  main_image: 'main_image',
-  performance_score: 0,
-  domain_rank: 15976,
-  domain_rank_updated: new Date('2023-12-01T00:00:00Z'),
-  published: new Date('2023-12-01T00:00:00Z'),
-  social: {
-    vk: { shares: 5 },
-    facebook: { likes: 10, comments: 2, shares: 1 },
-  },
-};
-
 describe('WebzService', () => {
   let service: WebzService;
   let prismaService: PrismaService;
 
   const mockPrismaService = {
-    $transaction: jest.fn().mockImplementation((cb) => cb({})),
+    $transaction: jest.fn().mockImplementation((cb) => cb(mockPrismaService)),
     thread: {
+      upsert: jest.fn().mockResolvedValue({ id: 'mock-thread-id' }),
       create: jest.fn().mockResolvedValue({ id: 'mock-thread-id' }),
     },
     post: {
+      findUnique: jest.fn(),
       create: jest.fn().mockResolvedValue({ id: 'mock-post-id' }),
+      update: jest.fn().mockResolvedValue({ id: 'mock-post-id' }),
     },
   };
 
@@ -148,57 +121,94 @@ describe('WebzService', () => {
     expect(service).toBeDefined();
   });
 
-  describe('prepareThreadData', () => {
-    it('should correctly transform thread data', () => {
-      const result = service['prepareThreadData'](thread);
+  describe('prepareThreadCreateData and prepareThreadUpdateData', () => {
+    const thread: Thread = {
+      uuid: 'random-uuid',
+      url: 'www.dibe.sh',
+      site_full: 'site_full',
+      site: 'dibe.sh',
+      site_section: 'site_section',
+      section_title: 'section_title',
+      title: 'title',
+      title_full: 'title_full',
+      replies_count: 12,
+      participants_count: 12,
+      site_type: 'news',
+      country: 'NP',
+      main_image: 'main_image',
+      performance_score: 0,
+      domain_rank: 15976,
+      domain_rank_updated: new Date('2023-12-01T00:00:00Z'),
+      published: new Date('2023-12-01T00:00:00Z'),
+      social: {
+        vk: { shares: 5 },
+        facebook: { likes: 10, comments: 2, shares: 1 },
+      },
+    };
+
+    it('should correctly transform thread data for creation', () => {
+      const result = service['prepareThreadCreateData'](thread);
 
       expect(result.published).toBeInstanceOf(Date);
-      expect(result.social.create.vk_shares).toEqual(5);
+      expect(result.social?.create?.vk_shares).toEqual(5);
+      expect(result.social?.create?.facebook?.create?.likes).toEqual(10);
+    });
+
+    it('should correctly transform thread data for update', () => {
+      const result = service['prepareThreadUpdateData'](thread);
+
+      expect(result.published).toBeInstanceOf(Date);
+      expect(result.social?.update?.vk_shares).toEqual(5);
+      expect(result.social?.update?.facebook?.update?.likes).toEqual(10);
     });
   });
 
   describe('createPost', () => {
-    it('should create a thread and post', async () => {
-      (prismaService.$transaction as jest.Mock).mockImplementationOnce(
-        async (callback) => {
-          return callback(prismaService);
+    it('should create a new post when it does not exist', async () => {
+      mockPrismaService.post.findUnique.mockResolvedValueOnce(null);
+
+      await service.createPost(createPostDto);
+
+      expect(prismaService.thread.upsert).toHaveBeenCalled();
+      expect(prismaService.post.findUnique).toHaveBeenCalledWith({
+        where: { uuid: createPostDto.uuid },
+        include: {
+          entities: true,
+          external_links: true,
+          external_images: true,
+          syndication: true,
         },
-      );
-      (prismaService.thread.create as jest.Mock).mockResolvedValueOnce({
-        uuid: '1c2af264ac6cc5381d3f6147260023e781dddb67',
       });
-      (prismaService.post.create as jest.Mock).mockResolvedValueOnce({
-        uuid: '1c2af264ac6cc5381d3f6147260023e781dddb67',
-      });
-
-      const result = await service.createPost(createPostDto);
-
-      expect(prismaService.thread.create).toHaveBeenCalled();
       expect(prismaService.post.create).toHaveBeenCalled();
-      expect(result.uuid).toEqual('1c2af264ac6cc5381d3f6147260023e781dddb67');
+      expect(prismaService.post.update).not.toHaveBeenCalled();
     });
-  });
 
-  describe('fetchAndStore', () => {
-    it('should initiate fetching and storing', async () => {
-      service['bulkFetchAndStore']({
-        queryString:
-          'site_type:(news OR blogs) is_first:true gold$ AND metal AND (trade$ OR volatility$ OR fund$ OR funds$) AND (market$ OR asset$ OR futures OR exchange) AND (forecast OR commodity OR "gold$ price$") AND (traders$ OR trading$ OR equity OR etf OR etfs OR portfolio) title:gold',
-      });
+    it('should update an existing post when it exists', async () => {
+      const existingPost = {
+        id: 'existing-id',
+        uuid: createPostDto.uuid,
+        entities: [],
+        external_links: [],
+        external_images: [],
+        syndication: null,
+      };
 
-      jest
-        .spyOn(service, 'bulkFetchAndStore')
-        .mockResolvedValue('Fetch request initiated');
+      mockPrismaService.post.findUnique.mockResolvedValueOnce(existingPost);
+
+      await service.createPost(createPostDto);
+      expect(prismaService.thread.upsert).toHaveBeenCalled();
+      expect(prismaService.post.update).toHaveBeenCalled();
+      expect(prismaService.post.create).toHaveBeenCalled();
     });
   });
 
   describe('storeBatch', () => {
-    it('should log and rethrow errors encountered during batch processing', async () => {
-      const posts = [{}] as any[];
+    it('should handle batch processing errors and logging', async () => {
+      const posts = [createPostDto];
       const requestId = 'test-request';
       const mockError = new Error('Test Error');
 
-      (prismaService.$transaction as jest.Mock).mockImplementationOnce(() => {
+      mockPrismaService.$transaction.mockImplementationOnce(() => {
         throw mockError;
       });
 
@@ -212,8 +222,53 @@ describe('WebzService', () => {
       });
 
       expect(logger.info).not.toHaveBeenCalledWith(
-        `Completed batch storage`,
+        'Completed batch storage',
         expect.anything(),
+      );
+    });
+
+    it('should successfully process and log batch creation', async () => {
+      const posts = [createPostDto];
+      const requestId = 'test-request';
+
+      mockPrismaService.post.findUnique.mockResolvedValue(null);
+
+      await service['storeBatch'](posts, requestId);
+
+      expect(logger.info).toHaveBeenCalledWith('Starting batch storage', {
+        requestId,
+        postCount: posts.length,
+      });
+
+      expect(logger.info).toHaveBeenCalledWith('Completed batch storage', {
+        requestId,
+        postCount: posts.length,
+      });
+    });
+  });
+
+  describe('bulkFetchAndStore', () => {
+    it('should initiate fetching and storing process', async () => {
+      const result = await service.bulkFetchAndStore({
+        queryString: 'site_type:(news OR blogs) is_first:true',
+      });
+
+      expect(result).toBe('Fetch request initiated');
+    });
+
+    it('should handle callback during fetch and store', async () => {
+      const mockCallback = jest.fn();
+
+      await service.bulkFetchAndStore(
+        {
+          queryString: 'test query',
+        },
+        mockCallback,
+      );
+
+      expect(logger.info).toHaveBeenCalledWith(
+        'Starting post fetch operation',
+        expect.any(Object),
       );
     });
   });
