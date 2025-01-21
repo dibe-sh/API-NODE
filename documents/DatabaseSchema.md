@@ -1,8 +1,8 @@
-# API NODE
+# Database Schema
 
 [👈 Documents](./Readme.md)
 
-- [API NODE](#api-node)
+- [Database Schema](#database-schema)
   - [Introduction](#introduction)
   - [Database type](#database-type)
   - [Table structure](#table-structure)

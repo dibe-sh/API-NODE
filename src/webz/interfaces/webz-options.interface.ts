@@ -3,6 +3,7 @@ export interface WebzCallbackData {
   remaining: number;
 }
 
+// TODO: Support more options for filtering and decouple options from query string
 export interface WebzOptions {
   queryString?: string;
 }

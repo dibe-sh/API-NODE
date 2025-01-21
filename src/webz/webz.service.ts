@@ -294,7 +294,6 @@ export class WebzService {
         }: WebzResponse = response;
 
         // Store Current post on batch
-        // TODO: Handel Duplicate UUID and data request
         this.storeBatch(posts, requestId);
 
         // Callback Execution if provided
