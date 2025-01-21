@@ -24,12 +24,12 @@ Some of the major requirements for this project are:
 
 ## Setup 🛠️
 
-> 📔 Make sure you have **yarn installed** or simply run **`npm install --global yarn`**. This will setup yarn globally
+> 📔 Make sure you have **yarn installed** or simply run **`npm install --global yarn`**. This will set yarn globally
 > 📔 Make sure your docker engine is also running.
 
-If you have `yarn` and `docker` setup then just run following commands.
+If you have `yarn` and `docker` setup then just run the following commands.
 
-Navigate to project directory on terminal and.
+Navigate to the project directory on a terminal and.
 
 1. Run `yarn setup` -> This will install all dependencies and make sure your `environment` setup is done.
 
@@ -39,11 +39,11 @@ Navigate to project directory on terminal and.
 WEBZIO_TOKEN = GET_YOUR_TOKEN
 ```
 
-3. Run `docker-compose up` or `docker compose up` -> This will Setup your database configured on your environment file and run app on dev mode.
+3. Run `docker-compose up` or `docker-compose up` -> This will Set up your database configured on your environment file and run the app in dev mode.
 
 ## Running Project 🏃‍♂️
 
-If you have completed setup you must have a running project. You can run the project using following command.
+If you have completed setup you must have a running project. You can run the project using the following command.
 
 > 📔 Make sure your docker is running.
 
@@ -53,14 +53,14 @@ docker compose up
 
 ## Building Project 🛠️
 
-You can build project using following command.
+You can build the project using the following command.
 
 1. `yarn build` -> generates build on `dist` directory
-2. `yarn start` -> will execute the build and spin up server. _"Make sure you have configured your env's properly while running on build mode"_
+2. `yarn start` -> will execute the build and spin the server. _"Make sure you have configured your env's properly while running on build mode"_
 
 ## Test Cases 🧪
 
-To run tests just run following commands.
+To run tests just run the following commands.
 
 1. Unit tests -> `yarn test`
 2. Test Coverage -> `yarn test:cov`
@@ -82,7 +82,7 @@ export interface WebzOptions {
 }
 ```
 
-1. Validate query string and avoid passing all parameters one query string
+2. Validate query string and avoid passing all parameters to one query string
 
 ## License 🗒️
 
